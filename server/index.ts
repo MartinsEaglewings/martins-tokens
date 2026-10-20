@@ -1,9 +1,11 @@
 import express from 'express';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import bcrypt from 'bcryptjs';
 import path from 'node:path';
 import { randomInt, randomUUID } from 'node:crypto';
 import {
+  pool,
   getStore,
   initializeStore,
   mutateStore,
@@ -43,7 +45,18 @@ const asyncRoute = (
 };
 
 app.use(express.json({ limit: '30kb' }));
+const PgSession = connectPgSimple(session);
+
+const sessionStore = pool
+  ? new PgSession({
+      pool,
+      tableName: 'martins_tokens_sessions',
+      createTableIfMissing: true
+    })
+  : undefined;
+
 app.use(session({
+  store: sessionStore,
   name: 'martins.sid',
   secret: SESSION_SECRET,
   resave: false,
