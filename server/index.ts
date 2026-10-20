@@ -23,6 +23,7 @@ declare module 'express-session' {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'albertgmartins17@gmail.com').toLowerCase();
 const SESSION_SECRET = process.env.SESSION_SECRET || 'development-only-change-this-secret-before-deploying';
@@ -218,6 +219,15 @@ app.post('/api/auth/login', asyncRoute(async (req, res) => {
   }
 
   req.session.userId = user.id;
+
+  // Ensure the session is persisted before telling the client login succeeded.
+  await new Promise<void>((resolve, reject) => {
+    req.session.save(error => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+
   res.json({ ok: true, profile: publicUser(data, user) });
 }));
 
